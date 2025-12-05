@@ -28,14 +28,14 @@ pipeline {
         stage('Upload JAR to EC2') {
             steps {
                 // root/target मधला jar पाठव
-                sh 'scp -o StrictHostKeyChecking=no target/*.jar ubuntu@<EC2-PUBLIC-IP>:/home/ubuntu/app.jar'
+                sh 'scp -o StrictHostKeyChecking=no target/*.jar ubuntu@3.111.144.92:/home/ubuntu/app.jar'
             }
         }
 
         stage('Deploy on EC2 & Restart Service') {
             steps {
                 sh '''
-                ssh -o StrictHostKeyChecking=no ubuntu@<EC2-PUBLIC-IP> "
+                ssh -o StrictHostKeyChecking=no ubuntu@3.111.144.92 "
                   pkill -f app.jar || true
                   nohup java -jar /home/ubuntu/app.jar > app.log 2>&1 &
                 "
