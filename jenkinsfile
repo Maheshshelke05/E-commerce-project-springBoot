@@ -2,6 +2,7 @@ pipeline {
     agent any
 
     stages {
+
         stage('Checkout') {
             steps {
                 git branch: 'master2', url: 'https://github.com/RajAhire-1/E-commerce-project-springBoot.git'
@@ -10,13 +11,15 @@ pipeline {
 
         stage('Build with Maven') {
             steps {
-                sh 'mvn clean package -DskipTests'
+                dir('E-commerce-project-springBoot') {   // IMPORTANT ⬅ FIX
+                    sh 'mvn clean package -DskipTests'
+                }
             }
         }
 
         stage('Upload JAR to EC2') {
             steps {
-                sh 'scp -o StrictHostKeyChecking=no target/*.jar ubuntu@<EC2-PUBLIC-IP>:/home/ubuntu/app.jar'
+                sh 'scp -o StrictHostKeyChecking=no E-commerce-project-springBoot/target/*.jar ubuntu@<EC2-PUBLIC-IP>:/home/ubuntu/app.jar'
             }
         }
 
@@ -24,8 +27,8 @@ pipeline {
             steps {
                 sh '''
                 ssh -o StrictHostKeyChecking=no ubuntu@<EC2-PUBLIC-IP> "
-                sudo systemctl stop myapp || true
-                java -jar /home/ubuntu/app.jar &
+                pkill -f app.jar || true
+                nohup java -jar /home/ubuntu/app.jar &
                 "
                 '''
             }
