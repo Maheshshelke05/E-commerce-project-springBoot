@@ -23,16 +23,20 @@ pipeline {
                     sh '''
                     echo "== Copying JAR to EC2 =="
                     scp -o StrictHostKeyChecking=no \
-                      JtProject/target/JtSpringProject-0.0.1-SNAPSHOT.jar \
-                      ubuntu@3.111.144.92:/home/ubuntu/app.jar
+                    JtProject/target/JtSpringProject-0.0.1-SNAPSHOT.jar \
+                    ubuntu@3.111.144.92:/home/ubuntu/app.jar
 
-                    echo "== Restarting app on EC2 =="
-                    ssh -o StrictHostKeyChecking=no ubuntu@3.111.144.92 "
-                      pkill -f \\"java -jar /home/ubuntu/app.jar\\" || true
-                      nohup java -jar /home/ubuntu/app.jar > app.log 2>&1 &
-                    "
+                    echo "== Restarting app =="
+                    ssh -o StrictHostKeyChecking=no ubuntu@3.111.144.92 << 'EOF'
+                    echo "Killing old app..."
+                    pkill -f "java -jar /home/ubuntu/app.jar" || true
 
-                    echo "== Deployment done =="
+                    echo "Starting new app..."
+                    nohup java -jar /home/ubuntu/app.jar > app.log 2>&1 &
+
+                    echo "App started successfully"
+                    exit 0
+                    EOF
                     '''
                 }
             }
