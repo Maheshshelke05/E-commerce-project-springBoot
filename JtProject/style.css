@@ -1,0 +1,8 @@
+/* small UI change: navbar color and title font */
+.navbar {
+  background-color: #1a73e8 !important; /* नवीन निळा */
+}
+.brand-title {
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}

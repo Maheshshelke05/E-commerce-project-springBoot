@@ -1,0 +1,78 @@
+pipeline {
+    agent any
+
+    environment {
+        EC2_HOST     = '3.111.144.92'
+        EC2_USER     = 'ubuntu'
+        EC2_SERVICE  = 'ecom.service'
+        GIT_REPO_URL = 'https://github.com/<YOUR-GITHUB-USERNAME>/E-commerce-project-springBoot.git'
+        GIT_BRANCH   = 'main'   // master असेल तर 'master' कर
+    }
+
+    stages {
+
+        stage('Checkout') {
+            steps {
+                git branch: env.GIT_BRANCH, url: env.GIT_REPO_URL
+            }
+        }
+
+        stage('Build with Maven') {
+            steps {
+                sh 'mvn -B -DskipTests clean package'
+            }
+        }
+
+        stage('Upload JAR to EC2') {
+            steps {
+                sshagent (credentials: ['ec2-ssh']) {
+                    sh '''
+                        JAR_FILE=$(find target -maxdepth 1 -type f -name "*.jar" | head -n1)
+                        echo "Using JAR: $JAR_FILE"
+
+                        scp -o StrictHostKeyChecking=no "$JAR_FILE" ${EC2_USER}@${EC2_HOST}:/home/${EC2_USER}/app.jar
+                    '''
+                }
+            }
+        }
+
+        stage('Deploy on EC2 & Restart Service') {
+            steps {
+                sshagent (credentials: ['ec2-ssh']) {
+                    sh '''
+                        ssh -o StrictHostKeyChecking=no ${EC2_USER}@${EC2_HOST} << 'EOF'
+                          sudo mv /home/${USER}/app.jar /opt/ecom/app.jar
+                          sudo chown root:root /opt/ecom/app.jar
+                          sudo chmod 500 /opt/ecom/app.jar
+
+                          sudo systemctl daemon-reload
+                          sudo systemctl restart ${EC2_SERVICE}
+                          sudo systemctl status ${EC2_SERVICE} --no-pager || exit 1
+                        EOF
+                    '''
+                }
+            }
+        }
+
+        stage('Health & DB Connectivity Check') {
+            steps {
+                sshagent (credentials: ['ec2-ssh']) {
+                    sh '''
+                        ssh -o StrictHostKeyChecking=no ${EC2_USER}@${EC2_HOST} << 'EOF'
+                          # check service status
+                          sudo systemctl is-active ${EC2_SERVICE} || exit 1
+
+                          # try HTTP health (root page)
+                          curl -sS http://localhost:8080/ | head -n 20 || exit 1
+                        EOF
+                    '''
+                }
+            }
+        }
+    }
+
+    triggers {
+        // GitHub webhook trigger
+        githubPush()
+    }
+}
