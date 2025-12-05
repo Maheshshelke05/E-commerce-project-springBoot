@@ -11,7 +11,7 @@ pipeline {
 
         stage('Build with Maven') {
             steps {
-                dir('JtProject') { 
+                dir('JtProject') {
                     sh 'mvn clean package -DskipTests'
                 }
             }
@@ -20,7 +20,11 @@ pipeline {
         stage('Upload JAR to EC2') {
             steps {
                 sshagent(credentials: ['ec2-ssh']) {
-                    sh 'scp -o StrictHostKeyChecking=no JtProject/target/*.jar ubuntu@3.111.144.92:/home/ubuntu/app.jar'
+                    sh '''
+                    scp -o StrictHostKeyChecking=no \
+                      JtProject/target/JtSpringProject-0.0.1-SNAPSHOT.jar \
+                      ubuntu@3.111.144.92:/home/ubuntu/app.jar
+                    '''
                 }
             }
         }
@@ -29,10 +33,16 @@ pipeline {
             steps {
                 sshagent(credentials: ['ec2-ssh']) {
                     sh '''
-                        ssh -o StrictHostKeyChecking=no ubuntu@3.111.144.92 "
-                            pkill -f app.jar || true
-                            nohup java -jar /home/ubuntu/app.jar > app.log 2>&1 &
-                        "
+                    ssh -o StrictHostKeyChecking=no ubuntu@3.111.144.92 << 'EOF'
+                    echo "Killing old app (if any)..."
+                    pkill -f "java -jar /home/ubuntu/app.jar" || true
+
+                    echo "Starting new app..."
+                    nohup java -jar /home/ubuntu/app.jar > app.log 2>&1 &
+
+                    echo "Deployment done on EC2."
+                    exit 0
+                    EOF
                     '''
                 }
             }
@@ -40,7 +50,7 @@ pipeline {
 
         stage('Health Check') {
             steps {
-                sh 'curl -f http://3.111.144.92:8080/actuator/health || true'
+                sh 'curl -f http://3.111.144.92:8080/actuator/health || (echo "Health check failed" && exit 1)'
             }
         }
     }
