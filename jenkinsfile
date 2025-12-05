@@ -9,6 +9,15 @@ pipeline {
             }
         }
 
+        stage('List Files (Debug)') {
+            steps {
+                sh '''
+                  echo "Workspace files:"
+                  ls -1
+                '''
+            }
+        }
+
         stage('Build with Maven') {
             steps {
                 dir('JtProject') {
