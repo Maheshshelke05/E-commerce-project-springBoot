@@ -12,7 +12,8 @@ pipeline {
         stage('List Files (Debug)') {
             steps {
                 sh '''
-                  echo "Workspace files:"
+                  echo "Workspace:"
+                  pwd
                   ls -1
                 '''
             }
@@ -21,25 +22,29 @@ pipeline {
         stage('Build with Maven') {
             steps {
                 dir('JtProject') {
-                    sh './mvnw clean package -DskipTests || mvn clean package -DskipTests'
+                    sh 'mvn clean package -DskipTests'
                 }
             }
         }
 
         stage('Upload JAR to EC2') {
             steps {
-                sh 'scp -o StrictHostKeyChecking=no JtProject/target/*.jar ubuntu@3.111.144.92:/home/ubuntu/app.jar'
+                sshagent(credentials: ['ec2-ssh']) {
+                    sh 'scp -o StrictHostKeyChecking=no JtProject/target/JtSpringProject-0.0.1-SNAPSHOT.jar ubuntu@3.111.144.92:/home/ubuntu/app.jar'
+                }
             }
         }
 
         stage('Deploy on EC2 & Restart Service') {
             steps {
-                sh '''
-                ssh -o StrictHostKeyChecking=no ubuntu@3.111.144.92 "
-                  pkill -f app.jar || true
-                  nohup java -jar /home/ubuntu/app.jar > app.log 2>&1 &
-                "
-                '''
+                sshagent(credentials: ['ec2-ssh']) {
+                    sh '''
+                    ssh -o StrictHostKeyChecking=no ubuntu@3.111.144.92 "
+                      pkill -f app.jar || true
+                      nohup java -jar /home/ubuntu/app.jar > app.log 2>&1 &
+                    "
+                    '''
+                }
             }
         }
 
