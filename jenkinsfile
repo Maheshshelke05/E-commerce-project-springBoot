@@ -17,55 +17,24 @@ pipeline {
             }
         }
 
-        stage('Upload JAR to EC2') {
+        stage('Upload & Deploy to EC2') {
             steps {
                 sshagent(credentials: ['ec2-ssh']) {
                     sh '''
+                    echo "== Copying JAR to EC2 =="
                     scp -o StrictHostKeyChecking=no \
                       JtProject/target/JtSpringProject-0.0.1-SNAPSHOT.jar \
                       ubuntu@3.111.144.92:/home/ubuntu/app.jar
+
+                    echo "== Restarting app on EC2 =="
+                    ssh -o StrictHostKeyChecking=no ubuntu@3.111.144.92 "
+                      pkill -f \\"java -jar /home/ubuntu/app.jar\\" || true
+                      nohup java -jar /home/ubuntu/app.jar > app.log 2>&1 &
+                    "
+
+                    echo "== Deployment done =="
                     '''
                 }
-            }
-        }
-
-        stage('Deploy on EC2') {
-            steps {
-                sshagent(credentials: ['ec2-ssh']) {
-                    sh '''
-                    ssh -o StrictHostKeyChecking=no ubuntu@3.111.144.92 << 'EOF'
-                    echo "Killing old app (if any)..."
-                    pkill -f "java -jar /home/ubuntu/app.jar" || true
-
-                    echo "Starting new app..."
-                    nohup java -jar /home/ubuntu/app.jar > app.log 2>&1 &
-
-                    echo "Deployment done on EC2."
-                    exit 0
-                    EOF
-                    '''
-                }
-            }
-        }
-
-        stage('Health Check') {
-            steps {
-                sh '''
-                echo "Waiting for app to start on port 8080..."
-
-                for i in {1..10}; do
-                  if curl -s http://3.111.144.92:8080/actuator/health > /dev/null; then
-                    echo "✅ App is UP on 8080 (actuator/health ok)"
-                    exit 0
-                  fi
-                  echo "⏳ Try $i/10: app not up yet, waiting 10s..."
-                  sleep 10
-                done
-
-                echo "⚠ App did not respond on /actuator/health after retries."
-                echo "⚠ Ignoring health check failure and marking pipeline SUCCESS."
-                exit 0
-                '''
             }
         }
     }
