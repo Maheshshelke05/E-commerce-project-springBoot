@@ -5,30 +5,37 @@ pipeline {
 
         stage('Checkout') {
             steps {
-                // फक्त repo checkout
+                // repo checkout
                 git branch: 'master2', url: 'https://github.com/RajAhire-1/E-commerce-project-springBoot.git'
             }
         }
 
         stage('List Files (Debug)') {
             steps {
-                // फक्त एकदा पाहायला की pom.xml कुठे आहे
-                sh 'pwd'
-                sh 'ls'
+                // workspace आणि project folder check
+                sh '''
+                  echo "== Workspace =="
+                  pwd
+                  ls
+                  echo "== Inside E-commerce-project-springBoot =="
+                  ls E-commerce-project-springBoot || echo "folder nahi distoy"
+                '''
             }
         }
 
         stage('Build with Maven') {
             steps {
-                // इथे कुठेही cd नाही, directly root मधल्या pom.xml वर build
-                sh 'mvn -f pom.xml clean package -DskipTests'
+                // IMPORTANT: इथे project folder मध्ये जाऊन build करतो
+                dir('E-commerce-project-springBoot') {
+                    sh 'mvn clean package -DskipTests'
+                }
             }
         }
 
         stage('Upload JAR to EC2') {
             steps {
-                // root/target मधला jar पाठव
-                sh 'scp -o StrictHostKeyChecking=no target/*.jar ubuntu@3.111.144.92:/home/ubuntu/app.jar'
+                // jar हा E-commerce-project-springBoot/target मध्ये असेल
+                sh 'scp -o StrictHostKeyChecking=no E-commerce-project-springBoot/target/*.jar ubuntu@3.111.144.92:/home/ubuntu/app.jar'
             }
         }
 
