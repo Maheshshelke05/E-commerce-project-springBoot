@@ -74,37 +74,37 @@ Trigger method → **GitHub Webhook**
 ## 🖼️ Screenshots (from `images/` folder)
 
 ### **1. EC2 Instance Running**
-![EC2 Running](images/active_running.png)
+![EC2 Running](img/active_running.png)
 
 ---
 
 ### **2. VS Code – Project Structure**
-![Project Structure](images/commits.png)
+![Project Structure](img/commits.png)
 
 ---
 
 ### **3. Jenkins Console Output**
-![Jenkins Console](images/console_output.png)
+![Jenkins Console](img/console_output.png)
 
 ---
 
 ### **4. GitHub Repository**
-![Repo](images/fork_repo.png)
+![Repo](img/fork_repo.png)
 
 ---
 
 ### **5. AWS EC2 Dashboard**
-![Servers](images/server.png)
+![Servers](img/server.png)
 
 ---
 
 ### **6. Terraform Apply – Success**
-![Terraform Apply](images/terraform_apply.png)
+![Terraform Apply](img/terraform_apply.png)
 
 ---
 
 ### **7. GitHub Webhook Working**
-![Webhook](images/webhook.png)
+![Webhook](img/webhook.png)
 
 ---
 
