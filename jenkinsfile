@@ -5,27 +5,13 @@ pipeline {
 
         stage('Checkout') {
             steps {
-                // Repo checkout
                 git branch: 'master2', url: 'https://github.com/RajAhire-1/E-commerce-project-springBoot.git'
-            }
-        }
-
-        stage('List Files (Debug)') {
-            steps {
-                sh '''
-                  echo "== Workspace ROOT =="
-                  pwd
-                  ls
-                  echo "== Inside JtProject =="
-                  ls JtProject || echo "JtProject folder nahi distoy!"
-                '''
             }
         }
 
         stage('Build with Maven') {
             steps {
                 dir('JtProject') {
-                    // आधी wrapper वापरून बघ, नाही जमलं तर system maven
                     sh './mvnw clean package -DskipTests || mvn clean package -DskipTests'
                 }
             }
@@ -33,7 +19,6 @@ pipeline {
 
         stage('Upload JAR to EC2') {
             steps {
-                // JAR हा JtProject/target मध्ये तयार होईल
                 sh 'scp -o StrictHostKeyChecking=no JtProject/target/*.jar ubuntu@3.111.144.92:/home/ubuntu/app.jar'
             }
         }
