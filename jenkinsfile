@@ -5,37 +5,36 @@ pipeline {
 
         stage('Checkout') {
             steps {
-                // repo checkout
+                // Repo checkout
                 git branch: 'master2', url: 'https://github.com/RajAhire-1/E-commerce-project-springBoot.git'
             }
         }
 
         stage('List Files (Debug)') {
             steps {
-                // workspace आणि project folder check
                 sh '''
-                  echo "== Workspace =="
+                  echo "== Workspace ROOT =="
                   pwd
                   ls
-                  echo "== Inside E-commerce-project-springBoot =="
-                  ls E-commerce-project-springBoot || echo "folder nahi distoy"
+                  echo "== Inside JtProject =="
+                  ls JtProject || echo "JtProject folder nahi distoy!"
                 '''
             }
         }
 
         stage('Build with Maven') {
             steps {
-                // IMPORTANT: इथे project folder मध्ये जाऊन build करतो
-                dir('E-commerce-project-springBoot') {
-                    sh 'mvn clean package -DskipTests'
+                dir('JtProject') {
+                    // आधी wrapper वापरून बघ, नाही जमलं तर system maven
+                    sh './mvnw clean package -DskipTests || mvn clean package -DskipTests'
                 }
             }
         }
 
         stage('Upload JAR to EC2') {
             steps {
-                // jar हा E-commerce-project-springBoot/target मध्ये असेल
-                sh 'scp -o StrictHostKeyChecking=no E-commerce-project-springBoot/target/*.jar ubuntu@3.111.144.92:/home/ubuntu/app.jar'
+                // JAR हा JtProject/target मध्ये तयार होईल
+                sh 'scp -o StrictHostKeyChecking=no JtProject/target/*.jar ubuntu@3.111.144.92:/home/ubuntu/app.jar'
             }
         }
 
