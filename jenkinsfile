@@ -5,21 +5,30 @@ pipeline {
 
         stage('Checkout') {
             steps {
+                // फक्त repo checkout
                 git branch: 'master2', url: 'https://github.com/RajAhire-1/E-commerce-project-springBoot.git'
+            }
+        }
+
+        stage('List Files (Debug)') {
+            steps {
+                // फक्त एकदा पाहायला की pom.xml कुठे आहे
+                sh 'pwd'
+                sh 'ls'
             }
         }
 
         stage('Build with Maven') {
             steps {
-                dir('E-commerce-project-springBoot') {   // IMPORTANT ⬅ FIX
-                    sh 'mvn clean package -DskipTests'
-                }
+                // इथे कुठेही cd नाही, directly root मधल्या pom.xml वर build
+                sh 'mvn -f pom.xml clean package -DskipTests'
             }
         }
 
         stage('Upload JAR to EC2') {
             steps {
-                sh 'scp -o StrictHostKeyChecking=no E-commerce-project-springBoot/target/*.jar ubuntu@<EC2-PUBLIC-IP>:/home/ubuntu/app.jar'
+                // root/target मधला jar पाठव
+                sh 'scp -o StrictHostKeyChecking=no target/*.jar ubuntu@<EC2-PUBLIC-IP>:/home/ubuntu/app.jar'
             }
         }
 
@@ -27,8 +36,8 @@ pipeline {
             steps {
                 sh '''
                 ssh -o StrictHostKeyChecking=no ubuntu@<EC2-PUBLIC-IP> "
-                pkill -f app.jar || true
-                nohup java -jar /home/ubuntu/app.jar &
+                  pkill -f app.jar || true
+                  nohup java -jar /home/ubuntu/app.jar > app.log 2>&1 &
                 "
                 '''
             }
@@ -36,7 +45,7 @@ pipeline {
 
         stage('Health Check') {
             steps {
-                sh 'curl -f http://<EC2-PUBLIC-IP>:8080/actuator/health'
+                sh 'curl -f http://3.111.144.92:8080/actuator/health'
             }
         }
     }
