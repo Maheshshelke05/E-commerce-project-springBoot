@@ -1,9 +1,15 @@
 pipeline {
     agent any
 
+    environment {
+        APP_IP = "13.234.239.192"
+        APP_USER = "ubuntu"
+        APP_PATH = "/home/ubuntu/app.jar"
+    }
+
     stages {
 
-        stage('Checkout') {
+        stage('Checkout Code') {
             steps {
                 git branch: 'master2', url: 'https://github.com/RajAhire-1/E-commerce-project-springBoot.git'
             }
@@ -21,22 +27,22 @@ pipeline {
             steps {
                 sshagent(credentials: ['ec2-ssh']) {
                     sh '''
-                    echo "== Copying JAR to EC2 =="
+                    echo "=== Copying JAR to EC2 ==="
                     scp -o StrictHostKeyChecking=no \
                     JtProject/target/JtSpringProject-0.0.1-SNAPSHOT.jar \
-                    ubuntu@3.111.144.92:/home/ubuntu/app.jar
+                    ${APP_USER}@${APP_IP}:${APP_PATH}
 
-                    echo "== Restarting app =="
-                    ssh -o StrictHostKeyChecking=no ubuntu@3.111.144.92 << 'EOF'
-                    echo "Killing old app..."
+                    echo "=== Restarting Spring Boot App ==="
+                    ssh -o StrictHostKeyChecking=no ${APP_USER}@${APP_IP} << 'EOF'
+                    echo "Stopping old app (if any)..."
                     pkill -f "java -jar /home/ubuntu/app.jar" || true
 
                     echo "Starting new app..."
                     nohup java -jar /home/ubuntu/app.jar > app.log 2>&1 &
 
-                    echo "App started successfully"
+                    echo "App deployed successfully!"
                     exit 0
-                    EOF
+EOF
                     '''
                 }
             }
